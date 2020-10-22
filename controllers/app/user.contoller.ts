@@ -231,7 +231,9 @@ try{
 catch(error){
 errRes(res,error)
 }
+await invoice.save();
 
+let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
 
 
 
