@@ -21,7 +21,7 @@ export default class AdminController {
   static async makeCategory(req, res): Promise<object> {
     let isNotValid = validate(req.body, validation.makeCategory());
     if (isNotValid) return errRes(res, isNotValid);
-    let title = req.body.title
+    let title = req.body.title;
     let category: any;
     category = await Category.findOne({ where: { title: title } });
     if (category) return errRes(res, `Category already exists`);
@@ -30,24 +30,25 @@ export default class AdminController {
       ...req.body,
       active: true,
     });
-    await category.save()
+    await category.save();
     return okRes(res, { data: { category } });
   }
-
 
   static async makeProduct(req, res): Promise<object> {
     let isNotValid = validate(req.body, validation.makeProduct());
     if (isNotValid) return errRes(res, isNotValid);
-    
-   let product:any 
-   product = await Product.create({
-      ...req.body,
-      active: true,
-    });
-    await product.save()
-    return okRes(res, { data: { product } });
+
+    let product: any;
+    try {
+      product = await Product.create({
+        ...req.body,
+        active: true,
+      });
+      await product.save();
+      return okRes(res, { data: { product } });
+    } catch (error) {
+      errRes(res, error);
+    }
   }
 }
 
-
-//TODO: why must i say   var:any instead of declaring and defining it directly?

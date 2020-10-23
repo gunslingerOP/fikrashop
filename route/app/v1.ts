@@ -16,12 +16,13 @@ router.post("/resend",userAuth,UserController.forgetPass)
 router.post("/reset",userAuth,UserController.fixPass)
 router.post("/addCategory",userAuth,AdminController.makeCategory)
 router.post("/addProduct",userAuth,AdminController.makeProduct)
+router.post("/ZC/payment",userAuth,UserController.invoicePayment)
 
 
 
 // HOME CONTROLLERproducts
 router.get("/categories", HomeController.getCategories);
-router.get("/products/:category", HomeController.getProducts);
+router.get("/products/:category", HomeController.getProducts); //TODO: why must params be an integer?
 router.get("/methods", HomeController.getMethods);
 router.get("/invoices", userAuth, HomeController.getInvoices);
 

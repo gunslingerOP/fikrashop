@@ -200,7 +200,7 @@ export default class UserController {
     // create the invoice items
     for (const product of products) {
       let invoiceItem = await InvoiceItem.create({
-        quantity: req.body.products.filter((e) => e.id == product.id)[0]
+        quantity: req.body.products.filter((e) => e.id == product.id)[0]   //TODO: why first char?
           .quantity,
         invoice,
         subtotal:
@@ -216,9 +216,9 @@ export default class UserController {
       serviceType: "fikracamps shop",
       redirectUrl: "localhost:3000/v1/ZC/redirect",
       production: false,
-      msisdn: "964****",
+      msisdn: "9647835077880",
       merchantId: "5a647d843321dcd9cbc771c",
-      secret: "$2y$10$9eaqimBisY15ZJZSSvC3Z.Ar1ET1.7Kgm8p7jysY1X.I8.RuwS.",
+      secret: config.ZC_SECRET,
       lang: "ar",
     };
 let zc = new ZC(paymentData)
@@ -238,7 +238,7 @@ let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
 
 
 
-    return okRes(res, { data: { invoice } });
+    return okRes(res, { data: { invoice, url } });
   }
 
   static async forgetPass(req, res): Promise<object> {
@@ -292,5 +292,46 @@ let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
 
     const token = jwt.sign({ id: user.id }, config.jwtSecret);
     return okRes(res, { data: { user, token } });
+  }
+
+
+
+
+  static async invoicePayment(req, res) {
+    //get token from url
+    const token = req.query.token;
+
+    if (!token) return errRes(res, "token not found");
+
+    // describe token and extract data
+    try {
+      var decoded: any = jwt.verify(token, config.ZC_SECRET);
+
+      if (decoded.status == "success") {
+        var invoice = await Invoice.findOne({
+          where: {
+            transactionId: decoded.id,
+            status: "pending",
+          },
+          relations: ["user"],
+        });
+
+        //if (!invoice) return errRes(res, "Invoice already payed");
+
+        //change invoice status
+        invoice.status = "paid";
+        await invoice.save();
+
+        return okRes(res, {
+          message: `thanks ${invoice.user.name} invoice paid successfully`,
+          transactionId: decoded.id,
+          invoice,
+        });
+      } else {
+        return errRes(res, { message: decoded.msg, transactionId: decoded.id });
+      }
+    } catch (err) {
+      return errRes(res, "invalid token");
+    }
   }
 }
