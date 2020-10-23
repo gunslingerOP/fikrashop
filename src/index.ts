@@ -1,7 +1,7 @@
 import * as express from 'express'
 import {Connection, createConnection} from 'typeorm'
 const app=express()
-const port =  process.env.port || 4000
+const port =  process.env.PORT || 4000
 import v1 from "../route/app/v1"
 
 
