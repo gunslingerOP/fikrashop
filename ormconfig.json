@@ -2,7 +2,7 @@
    "type": "postgres",
    "host": "ec2-54-246-85-151.eu-west-1.compute.amazonaws.com", 
    "port": 5432,
-   
+   "username": "ympmrycwtridhz",
    "password": "607a501eacfdad77e8e04434c8784d63e331b7f59c627cc26b25e02d4c55863c",
    "database": "d6gdvuk9g5ffg7",
    "synchronize": true,
