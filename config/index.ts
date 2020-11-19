@@ -1,9 +1,11 @@
+
 import { env } from "process";
-
 require("dotenv").config();
-
 let config: any;
 export default config = {
   jwtSecret: process.env.JWT_SECRET || "shhh",
-  ZC_SECRET: process.env.ZC_SECRET || "$2y$10$9eaqimBisY15ZJZSSvC3Z.Ar1ET1.7Kgm8p7jysY1X.I8.RuwS."
+  zcSecret: process.env.ZC_SECRET || "shhh",
+  zcMsisdn: process.env.ZC_MSISDN || "",
+  zcMerchant: process.env.ZC_MERCHANT || "",
+  imageBB: process.env.IMAGE_BB || "",
 };

@@ -12,12 +12,12 @@ import { User } from "../../src/entity/User";
 import PhoneFormat from "../../helpers/phone.helper";
 import * as jwt from "jsonwebtoken";
 import config from "../../config";
-import { async } from "validate.js";
 import { Product } from "../../src/entity/product";
 import { Invoice } from "../../src/entity/Invoice";
 import { InvoiceItem } from "../../src/entity/InvoiceItem";
-import userAuth from "../../middleware/userAuth";
 import * as ZC from "zaincash";
+
+
 /**
  *
  */
@@ -131,7 +131,7 @@ export default class UserController {
     if (!validPassword) return errRes(res, `Your password is incorrect`);
 
     // create token
-    const token = jwt.sign({ id: user.id }, config.jwtSecret); //TODO: why return a token?
+    const token = jwt.sign({ id: user.id }, config.jwtSecret); 
 
     // return
 
@@ -195,42 +195,42 @@ export default class UserController {
     });
     await invoice.save();
 
-    // create ZC things
-
+    
     // create the invoice items
     for (const product of products) {
       let invoiceItem = await InvoiceItem.create({
-        quantity: req.body.products.filter((e) => e.id == product.id)[0]   //TODO: why first char?
-          .quantity,
+        quantity: req.body.products.filter((e) => e.id == product.id)[0]   
+        .quantity,
         invoice,
         subtotal:
-          req.body.products.filter((e) => e.id == product.id)[0].quantity *
-          product.price,
+        req.body.products.filter((e) => e.id == product.id)[0].quantity *
+        product.price,
         product,
       });
       await invoiceItem.save();
     }
-    const paymentData = {
-      amount: total,
-      orderId: invoice.id,
-      serviceType: "fikracamps shop",
-      redirectUrl: "localhost:3000/v1/ZC/redirect",
-      production: false,
-      msisdn: "9647835077880",
-      merchantId: "5a647d843321dcd9cbc771c",
-      secret: config.ZC_SECRET,
-      lang: "ar",
-    };
-let zc = new ZC(paymentData)
-let zcTransactionId:any;
-try{
+    // create ZC things
+//     const paymentData = {
+//       amount: total,
+//       orderId: invoice.id,
+//       serviceType: "fikracamps shop",
+//       redirectUrl: "localhost:3000/v1/ZC/redirect",
+//       production: false,
+//       msisdn: "9647835077880",
+//       merchantId: "5a647d843321dcd9cbc771c",
+//       secret: config.zcSecret,
+//       lang: "ar",
+//     };
+// let zc = new ZC(paymentData)
+// let zcTransactionId:any;
+// try{
 
-   zcTransactionId = await zc.init()
+//    zcTransactionId = await zc.init()
 
-}
-catch(error){
-errRes(res,error)
-}
+// }
+// catch(error){
+// errRes(res,error)
+// }
 await invoice.save();
 
 let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
@@ -238,7 +238,7 @@ let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
 
 
 
-    return okRes(res, { data: { invoice, url } });
+    return okRes(res, { data: { invoice } });
   }
 
   static async forgetPass(req, res): Promise<object> {
@@ -297,41 +297,33 @@ let url = `https://test.zaincash.iq/transaction/pay?id=${invoice.transactionId}`
 
 
 
-  static async invoicePayment(req, res) {
-    //get token from url
+  static async zcRedirect(req, res): Promise<object> {
     const token = req.query.token;
 
-    if (!token) return errRes(res, "token not found");
-
-    // describe token and extract data
+    let payload: any;
     try {
-      var decoded: any = jwt.verify(token, config.ZC_SECRET);
-
-      if (decoded.status == "success") {
-        var invoice = await Invoice.findOne({
-          where: {
-            transactionId: decoded.id,
-            status: "pending",
-          },
-          relations: ["user"],
-        });
-
-        //if (!invoice) return errRes(res, "Invoice already payed");
-
-        //change invoice status
-        invoice.status = "paid";
-        await invoice.save();
-
-        return okRes(res, {
-          message: `thanks ${invoice.user.name} invoice paid successfully`,
-          transactionId: decoded.id,
-          invoice,
-        });
-      } else {
-        return errRes(res, { message: decoded.msg, transactionId: decoded.id });
-      }
-    } catch (err) {
-      return errRes(res, "invalid token");
+      payload = jwt.verify(token, config.zcSecret);
+    } catch (error) {
+      return errRes(res, error);
     }
+    const id = payload.orderid;
+
+    let invoice = await Invoice.findOne(id);
+
+    if (!invoice) return errRes(res, "No such invoice");
+
+    if (payload.status == "success") {
+      invoice.status = "paid";
+      invoice.zcOperation = payload.operationid;
+      invoice.zcMsisdn = payload.msisdn;
+      await invoice.save();
+      return okRes(res, { invoice });
+    }
+    invoice.status = payload.status;
+    invoice.zcOperation = payload.operationid;
+    invoice.zcMsg = payload.msg;
+    await invoice.save();
+
+    return errRes(res, { data: { invoice } });
   }
 }

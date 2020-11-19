@@ -1,4 +1,4 @@
-import { errRes, okRes } from "../../helpers/tools";
+import { errRes, okRes, paginate } from "../../helpers/tools";
 import { Category } from "../../src/entity/Category";
 import { Invoice } from "../../src/entity/Invoice";
 import { Method } from "../../src/entity/Method";
@@ -14,10 +14,16 @@ export default class HomeController {
    * @param res
    */
   static async getCategories(req, res): Promise<object> {
+    let { p, s } = req.query;
+    let { skip, take } = paginate(p, s);
+
     try {
-      let data = await Category.find({
+      let data = await Category.findAndCount({
         where: { active: true },
         relations: ["products"],
+        take,
+        skip,
+        order: { id: "ASC" },
       });
       return okRes(res, { data });
     } catch (error) {
@@ -71,11 +77,11 @@ export default class HomeController {
         where: { user: req.user },
 
         join: {
-          alias: "invoice",
+          alias: "invoices",
           leftJoinAndSelect: {
-            user: "invoice.user",
-            items: "invoice.items",
-            product: "items.product",
+            user: "invoices.user",
+            items: "invoices.items",
+            products: "items.product",
           },
         },
       });
